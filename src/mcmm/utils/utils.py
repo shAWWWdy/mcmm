@@ -1,7 +1,7 @@
 import json
 import os
 import platform
-
+from .version_processors import *
 
 def __find_default_minecraft_dir() -> str | None:
     system = platform.system()
@@ -19,11 +19,11 @@ def __find_default_minecraft_dir() -> str | None:
     return minecraft_dir
 
 
-def __get_latest_version() -> str | None:
+def __get_latest_version() -> str:
     minecraft_dir = __find_default_minecraft_dir()
     if minecraft_dir is None:
-        return None
-    latest = None
+        return ""
+    latest = ""
     try:
         with open(os.path.join(minecraft_dir, "versions", "version_manifest_v2.json"), 'r') as file:
             vers = json.load(file)
@@ -33,16 +33,20 @@ def __get_latest_version() -> str | None:
     return latest
 
 
-def __process_raw_minecraft_version(raw_version: str) -> str | None:
+def __process_raw_client_version(raw_version: str) -> str | None:
     actual_version = None
     if raw_version == 'latest-release':
-        actual_version = __get_latest_version()
+        actual_version = "Minecraft " + __get_latest_version()
     elif 'fabric' in raw_version.lower():
-        actual_version = raw_version.split('-')[-1]
+        actual_version = process_fabric_client(raw_version)
     elif 'forge' in raw_version.lower():
-        actual_version = raw_version.split('-')[0]
+        actual_version = process_forge_client(raw_version)
     elif 'neoforge' in raw_version.lower():
-        actual_version = None
+        actual_version = process_neoforge_client(raw_version)
+    elif 'quilt' in raw_version.lower():
+        actual_version = process_quilt_client(raw_version)
+    else:
+        actual_version = process_vanilla_client(raw_version)
 
     return actual_version
 
@@ -50,17 +54,24 @@ def __process_raw_minecraft_version(raw_version: str) -> str | None:
 def __process_raw_modloader_version(raw_version: str) -> str | None:
     actual_version = None
     if 'fabric' in raw_version.lower():
-        actual_version = "Fabric " + raw_version.split('-')[-2]
+        actual_version = process_fabric_loader(raw_version)
     elif 'forge' in raw_version.lower():
-        actual_version = "Forge " + raw_version.split('-')[-1]
+        actual_version = process_forge_loader(raw_version)
     elif 'neoforge' in raw_version.lower():
-        actual_version = "Neoforge"
+        actual_version = process_neoforge_loader(raw_version)
+    elif 'quilt' in raw_version.lower():
+        actual_version = process_quilt_loader(raw_version)
+    else:
+        actual_version = process_vanilla_loader(raw_version)
 
     return actual_version
 
 
 def find_mods_dir(target_path: str | None = None) -> str | None:
-    """Returns mods/ directory. If run in minecraft profile folder, return its folder. If not, searches for .minecraft/mods/ or provides None"""
+    """
+    Returns mods/ directory. If run in minecraft profile folder, return its folder.
+    If not, searches for .minecraft/mods/ or provides None
+    """
     mods_dir = None
     cwd = target_path if target_path is not None else os.getcwd()
     cwd_name = os.path.basename(cwd)
@@ -100,7 +111,7 @@ def detect_client(target_path: str | None = None) -> str | None:
         pass
 
     if raw_version:
-        return __process_raw_minecraft_version(raw_version)
+        return __process_raw_client_version(raw_version)
     return raw_version
 
 

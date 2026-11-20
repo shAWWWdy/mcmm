@@ -43,7 +43,7 @@ def dir(ctx):
 def client(ctx):
     """Show current client version"""
     client_v = detect_client(ctx.obj['dir'])
-    click.echo("Minecraft " + client_v if client_v is not None else "Could not define Minecraft client version.")
+    click.echo(client_v if client_v is not None else "Could not define Minecraft client version.")
 
 
 @cli.command()
