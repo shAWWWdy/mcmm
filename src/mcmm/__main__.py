@@ -1,9 +1,7 @@
 import click
-
 import mcmm
 from mcmm.utils.installers import *
 from mcmm.utils.utils import *
-
 
 @click.group(invoke_without_command=True)
 @click.option("--version", "-V", is_flag=True, help="Show version.")
@@ -26,7 +24,7 @@ def cli(ctx, version, target_dir):
 def list(ctx):
     """List all installed mods in current mods folder"""
     mods_dir = find_mods_dir(ctx.obj['dir'])
-    mods = os.listdir(mods_dir)
+    mods = [entry.name for entry in os.scandir(mods_dir) if entry.is_file() and entry.name.endswith(".jar")]
     for mod in mods:
         click.echo(mod)
 

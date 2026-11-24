@@ -2,6 +2,7 @@ import json
 import os
 import platform
 from .version_processors import *
+from datetime import datetime
 
 def __find_default_minecraft_dir() -> str | None:
     system = platform.system()
@@ -45,7 +46,7 @@ def __process_raw_client_version(raw_version: str) -> str | None:
         actual_version = process_neoforge_client(raw_version)
     elif 'quilt' in raw_version.lower():
         actual_version = process_quilt_client(raw_version)
-    else:
+    elif raw_version is not None:
         actual_version = process_vanilla_client(raw_version)
 
     return actual_version
@@ -53,7 +54,9 @@ def __process_raw_client_version(raw_version: str) -> str | None:
 
 def __process_raw_modloader_version(raw_version: str) -> str | None:
     actual_version = None
-    if 'fabric' in raw_version.lower():
+    if raw_version == 'latest-release':
+        actual_version = "Vanilla Minecraft " + __get_latest_version()
+    elif 'fabric' in raw_version.lower():
         actual_version = process_fabric_loader(raw_version)
     elif 'forge' in raw_version.lower():
         actual_version = process_forge_loader(raw_version)
@@ -61,7 +64,7 @@ def __process_raw_modloader_version(raw_version: str) -> str | None:
         actual_version = process_neoforge_loader(raw_version)
     elif 'quilt' in raw_version.lower():
         actual_version = process_quilt_loader(raw_version)
-    else:
+    elif raw_version is not None:
         actual_version = process_vanilla_loader(raw_version)
 
     return actual_version
@@ -103,10 +106,20 @@ def detect_client(target_path: str | None = None) -> str | None:
     try:
         with open(os.path.join(minecraft_dir, "launcher_profiles.json"), 'r') as file:
             profiles = json.load(file)['profiles']
+            last_used_profile = None
+            last_used_time = 0
             for profile in profiles.values():
-                if profile['gameDir'] in current_dir:
+                if 'lastUsed' in profile.keys() and profile['lastUsed']:
+                    time = int(datetime.fromisoformat(profile['lastUsed']).timestamp() * 1000)
+                    if time > last_used_time:
+                        last_used_time = time
+                        last_used_profile = profile['lastVersionId']
+                if 'gameDir' in profile.keys() and profile['gameDir'] in current_dir:
                     raw_version: str = profile['lastVersionId']
                     break
+            else:
+                if last_used_profile is not None:
+                    raw_version = last_used_profile
     except Exception:
         pass
 
@@ -130,10 +143,20 @@ def detect_modloader(target_path: str | None = None) -> str | None:
     try:
         with open(os.path.join(minecraft_dir, "launcher_profiles.json"), 'r') as file:
             profiles = json.load(file)['profiles']
+            last_used_profile = None
+            last_used_time = 0
             for profile in profiles.values():
-                if profile['gameDir'] in current_dir:
+                if 'lastUsed' in profile.keys() and profile['lastUsed']:
+                    time = int(datetime.fromisoformat(profile['lastUsed']).timestamp() * 1000)
+                    if time > last_used_time:
+                        last_used_time = time
+                        last_used_profile = profile['lastVersionId']
+                if 'gameDir' in profile.keys() and profile['gameDir'] in current_dir:
                     raw_version: str = profile['lastVersionId']
                     break
+            else:
+                if last_used_profile is not None:
+                    raw_version = last_used_profile
     except Exception:
         pass
 
