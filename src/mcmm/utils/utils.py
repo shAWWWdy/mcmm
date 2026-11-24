@@ -83,7 +83,7 @@ def find_mods_dir(target_path: str | None = None) -> str | None:
     elif os.path.isdir(candidate):
         mods_dir = candidate
     elif minecraft_dir:
-        mods_dir = minecraft_dir
+        mods_dir = os.path.join(minecraft_dir, "mods")
 
     return mods_dir
 
